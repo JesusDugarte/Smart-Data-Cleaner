@@ -272,6 +272,69 @@ BLOQUEADO   ✓
 -   CSV
 -   Excel
 
+## Instalación
+
+Requisitos:
+
+- Python 3.11 o superior.
+- pandas.
+- openpyxl.
+
+Instalar las dependencias con:
+
+```powershell
+pip install pandas openpyxl
+```
+
+## Ejecución
+
+Desde la carpeta raíz del proyecto ejecutar:
+
+```powershell
+python inicio_v2_06.py
+```
+
+La versión actual utiliza archivos CSV de prueba configurados
+directamente en `inicio_v2_06.py`. Actualmente se utilizan:
+
+```text
+pruebas_v2_06/
+├── archivo_X.csv
+└── archivo_W.csv
+```
+
+Para procesar otros archivos en esta versión, es necesario modificar la
+lista `archivos_csv` del archivo `inicio_v2_06.py`.
+
+## Entrada de datos
+
+Smart Data Cleaner recibe archivos CSV para analizarlos, determinar su
+compatibilidad estructural y de tipos y, cuando corresponde,
+consolidarlos.
+
+En V2-09, la entrada está configurada de forma explícita en el archivo
+principal. El descubrimiento automático de archivos en una carpeta no
+forma parte de esta versión.
+
+## Resultados
+
+Después de una ejecución válida, los resultados se generan en la carpeta
+`salida/`:
+
+```text
+salida/
+├── datos_limpios.csv
+├── informe_proceso.txt
+└── informe_proceso.xlsx
+```
+
+- `datos_limpios.csv`: contiene los datos finales procesados.
+- `informe_proceso.txt`: contiene un resumen textual del proceso.
+- `informe_proceso.xlsx`: contiene el informe estructurado en Excel.
+
+La carpeta `salida/` contiene resultados generados localmente y está
+excluida del control de versiones mediante `.gitignore`.
+
 ## Principios de diseño
 
 -   No modificar datos sin una regla definida.
