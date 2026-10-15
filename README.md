@@ -2,7 +2,7 @@
 
 ## Estado actual
 
-**Versión: V2-09 --- Validada**
+**Versión: V2-06 --- Consolidada y validada**
 
 Smart Data Cleaner es una herramienta desarrollada en Python para
 analizar, consolidar y controlar la calidad de múltiples archivos CSV.
@@ -41,6 +41,14 @@ Decisión
 ```
 
 ## Evolución
+
+Las siguientes secciones describen las etapas funcionales del desarrollo.
+
+Sus capacidades se integran en la versión consolidada actual,
+identificada técnicamente como V2-06.
+
+Las referencias V2-07, V2-08 y V2-09 se conservan como parte del
+historial del proyecto.
 
 ### V2-06 --- Decisión de consolidación
 
@@ -172,7 +180,7 @@ validación, análisis, modelo y presentación.
 En `BLOQUEADO`, no se ejecutan las etapas que dependen de una
 consolidación válida.
 
-## Casos de prueba V2-09
+## Casos de prueba de la versión consolidada (V2-06)
 
 ### LISTO
 
@@ -256,7 +264,13 @@ Comprobado en consola y Excel.
 
 ## Estado de la versión
 
-**V2-09 --- VALIDADA**
+**V2-06 --- CONSOLIDADA Y VALIDADA**
+
+La versión publicada integra el análisis estructural, las reglas de
+consolidación, el análisis de calidad de datos, las correcciones
+permitidas, la validación de resultados y la generación de informes
+TXT y Excel.
+
 
 ``` text
 LISTO       ✓
@@ -312,9 +326,10 @@ Smart Data Cleaner recibe archivos CSV para analizarlos, determinar su
 compatibilidad estructural y de tipos y, cuando corresponde,
 consolidarlos.
 
-En V2-09, la entrada está configurada de forma explícita en el archivo
-principal. El descubrimiento automático de archivos en una carpeta no
-forma parte de esta versión.
+En la versión actual, los archivos de entrada están configurados
+explícitamente en el archivo principal `inicio_v2_06.py`.
+El descubrimiento automático de archivos dentro de una carpeta
+no forma parte de esta versión.
 
 ## Resultados
 
@@ -346,10 +361,13 @@ excluida del control de versiones mediante `.gitignore`.
 
 ## Próximos pasos
 
-V2-09 se considera una versión estable.
+La versión V2-06 consolidada se considera estable dentro del alcance
+actual del proyecto.
 
 Las futuras versiones podrán ampliar las reglas de calidad, soportar
-configuraciones adicionales, incorporar pruebas automatizadas, mejorar
-el procesamiento de múltiples archivos o añadir una interfaz de usuario.
+configuraciones adicionales, incorporar nuevas pruebas automatizadas,
+mejorar el procesamiento de múltiples archivos o añadir una interfaz
+de usuario.
 
-Estas funcionalidades no forman parte de V2-09.
+Estas funcionalidades futuras no forman parte del alcance actual
+de la versión consolidada.
