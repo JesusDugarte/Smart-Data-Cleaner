@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.pyc
 
@@ -14,3 +14,15 @@ env/
 
 # Resultados generados
 salida/
+# Copias de seguridad locales
+*.bak
+*.bak_*
+*.pre_codificacion.bak
+respaldo_*/
+
+# Resultados de escenarios de prueba
+salida_prueba_*/
+
+# Comparaciones temporales del desarrollo
+/comparacion_*.txt
+/qq

@@ -300,7 +300,12 @@ def mostrar_decision(estado_consolidacion, motivos):
         estado_consolidacion
     )
 
-    if motivos["hay_incompatibilidades"]:
+    if motivos.get("hay_encabezados_duplicados", False):
+        print(
+            "Motivo: Se detectaron "
+            "encabezados duplicados."
+        )
+    elif motivos["hay_incompatibilidades"]:
         print(
             "Motivo: Se detectaron "
             "incompatibilidades de tipos."
@@ -315,17 +320,35 @@ def mostrar_decision(estado_consolidacion, motivos):
             "Motivo: Se detectaron diferencias "
             "de tipos compatibles potencialmente."
         )
+    elif motivos.get("hay_diferencias_estructurales", False):
+        print(
+            "Motivo: Se detectaron columnas que "
+            "no están presentes en todos los archivos."
+        )
 
 def mostrar_consolidacion_bloqueada(
     compatibilidad_estructural,
-    hay_incompatibilidades
+    hay_incompatibilidades,
+    duplicados_por_archivo=None
 ):
 
     print()
 
     print("CONSOLIDACIÓN BLOQUEADA.")
 
-    if compatibilidad_estructural == "SIN_BASE_COMUN":
+    if duplicados_por_archivo:
+
+        print(
+            "No se realizará la consolidación porque "
+            "hay encabezados duplicados."
+        )
+
+        for nombre, duplicados in duplicados_por_archivo.items():
+
+            print(f"Archivo afectado: {nombre}")
+            print(f"Columnas duplicadas: {duplicados}")
+
+    elif compatibilidad_estructural == "SIN_BASE_COMUN":
 
         print(
             "No existe una base estructural común "
@@ -493,8 +516,7 @@ def mostrar_resumen_proceso(resultado_proceso):
 
     if "calidad" in diagnostico:
 
-        calidad_proceso = diagnostico["calidad"]
-        calidad = calidad_proceso["diagnostico"]
+        calidad = diagnostico["calidad"]
 
         print()
         print("FALTANTES")
@@ -612,9 +634,9 @@ def mostrar_resumen_proceso(resultado_proceso):
         print()
         print("HALLAZGOS DE CALIDAD")
 
-        interpretacion = calidad["interpretacion"]
+        decision_calidad = decision["calidad"]
 
-        for hallazgo in interpretacion["hallazgos"]:
+        for hallazgo in decision_calidad["hallazgos"]:
 
             print()
             print("Categoría:", hallazgo["categoria"])
@@ -639,7 +661,7 @@ def mostrar_resumen_proceso(resultado_proceso):
                 "Normalizar capitalización"
         }
 
-        for recomendacion in interpretacion["recomendaciones"]:
+        for recomendacion in decision_calidad["recomendaciones"]:
 
             columna = recomendacion["columna"]
 
@@ -660,7 +682,7 @@ def mostrar_resumen_proceso(resultado_proceso):
         print()
         print("CORRECCIONES REALIZADAS")
 
-        correcciones = calidad_proceso["correcciones"]
+        correcciones = resultado_proceso["resultado"]["correcciones"]
 
         if correcciones:
 
@@ -681,7 +703,7 @@ def mostrar_resumen_proceso(resultado_proceso):
         print()
         print("PENDIENTES")
 
-        pendientes = calidad_proceso["pendientes"]
+        pendientes = resultado_proceso["resultado"]["pendientes"]
 
         if pendientes:
 
@@ -749,7 +771,44 @@ def mostrar_resumen_proceso(resultado_proceso):
         print(
             "Validación de consolidación no realizada."
         )
+    archivo_exportado = validacion.get("archivo_exportado")
 
+    if archivo_exportado is not None:
+
+        print()
+        print("ARCHIVO CSV EXPORTADO")
+
+        if not archivo_exportado.get("realizada", False):
+
+            print(
+                "Validación del archivo exportado no realizada."
+            )
+
+        else:
+
+            print(
+                "Archivo:",
+                archivo_exportado.get("archivo", "desconocido")
+            )
+
+            print(
+                "Estado:",
+                archivo_exportado.get("estado", "DESCONOCIDO")
+            )
+
+            if archivo_exportado.get("filas") is not None:
+
+                print(
+                    "Filas:",
+                    archivo_exportado["filas"]
+                )
+
+            if archivo_exportado.get("columnas") is not None:
+
+                print(
+                    "Columnas:",
+                    archivo_exportado["columnas"]
+                )
     print()
     print("RESULTADO")
 

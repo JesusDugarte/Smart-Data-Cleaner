@@ -1,6 +1,11 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 import pandas as pd
+
+from proceso_v2_06 import (
+    cargar_archivos_csv,
+    diagnosticar_estructuras_archivos
+)
 
 from exportacion.excel import (
     crear_libro_informe,
@@ -46,9 +51,7 @@ from validacion.consolidacion import (
 )
 
 from reglas.estructura import (
-    construir_estructura_objetivo,
     determinar_estado_consolidacion,
-    analizar_estructuras_archivos,
     analizar_condiciones_tipos,
     clasificar_compatibilidad_tipos_varios,
     determinar_estado_final,
@@ -61,6 +64,10 @@ from limpieza.estructura import (
 
 from validacion.estructura import (
     validar_estructura
+)
+
+from validacion.archivo import (
+    validar_archivo_exportado
 )
 
 from detectores.conflictos_tipos import (
@@ -84,52 +91,59 @@ CARPETA_ENTRADA = Path("pruebas_v2_06")
 # Localizar archivos CSV
 # ----------------------------------------------------------
 
+
 archivos_csv = [
     Path("pruebas_v2_06/archivo_X.csv"),
     Path("pruebas_v2_06/archivo_W.csv")
 ]
 
 # ----------------------------------------------------------
-# Validar cantidad de archivos
+# Cargar archivos y detectar encabezados duplicados
 # ----------------------------------------------------------
 
-if len(archivos_csv) < 2:
-    raise ValueError(
-        "V2-06 requiere al menos 2 archivos CSV."
-    )
+resultado_carga = cargar_archivos_csv(
+    archivos_csv
+)
 
-
-# ----------------------------------------------------------
-# Cargar archivos
-# ----------------------------------------------------------
-
-datos_archivos = []
-
-for archivo in archivos_csv:
-
-    datos = pd.read_csv(
-        archivo
-    )
-
-    datos_archivos.append(
-        datos
-    )
-
-
-nombres_archivos = [
-    archivo.name
-    for archivo in archivos_csv
+duplicados_por_archivo = resultado_carga[
+    "duplicados_por_archivo"
 ]
+
+datos_archivos = resultado_carga[
+    "datos_archivos"
+]
+
+nombres_archivos = resultado_carga[
+    "nombres_archivos"
+]
+
+print()
+print("DIAGNÓSTICO DE ENCABEZADOS DUPLICADOS:")
+
+if duplicados_por_archivo:
+    for nombre, duplicados in duplicados_por_archivo.items():
+        print(f"Archivo: {nombre}")
+        print(f"Columnas duplicadas: {duplicados}")
+else:
+    print("No se detectaron encabezados duplicados.")
 
 # print()
 # ----------------------------------------------------------
 # Diagnóstico de estructura común
 # ----------------------------------------------------------
 
-diagnostico_estructural = analizar_estructuras_archivos(
+# ----------------------------------------------------------
+# Diagnóstico estructural y construcción de estructura objetivo
+# ----------------------------------------------------------
+
+resultado_estructural = diagnosticar_estructuras_archivos(
     datos_archivos,
     nombres_archivos
 )
+
+diagnostico_estructural = resultado_estructural[
+    "diagnostico_estructural"
+]
 
 columnas_comunes = diagnostico_estructural[
     "columnas_comunes"
@@ -139,18 +153,13 @@ mostrar_diagnostico_estructural(
     diagnostico_estructural
 )
 
-# ----------------------------------------------------------
-# Construir estructura objetivo
-# ----------------------------------------------------------
-
-estructura_objetivo = construir_estructura_objetivo(
-    datos_archivos
-)
+estructura_objetivo = resultado_estructural[
+    "estructura_objetivo"
+]
 
 mostrar_estructura_objetivo(
     estructura_objetivo
 )
-
 
 # ----------------------------------------------------------
 # Homogeneizar estructuras
@@ -256,6 +265,9 @@ estado_consolidacion = determinar_estado_consolidacion(
     hay_datos_insuficientes=hay_datos_insuficientes
 )
 
+if duplicados_por_archivo:
+    estado_consolidacion = "BLOQUEADO"
+
 # ----------------------------------------------------------
 # Consolidar archivos
 # ----------------------------------------------------------
@@ -285,7 +297,10 @@ decision = {
     "motivos": {
         "hay_incompatibilidades": hay_incompatibilidades,
         "hay_conflictos": hay_conflictos,
-        "hay_datos_insuficientes": hay_datos_insuficientes
+        "hay_datos_insuficientes": hay_datos_insuficientes,
+        "hay_diferencias_estructurales":
+            diagnostico_estructural["compatibilidad"] == "ESTRUCTURA_PARCIAL",
+        "hay_encabezados_duplicados": bool(duplicados_por_archivo)
     }
 }
 
@@ -327,13 +342,32 @@ registros_validos = None
 validacion_procedencia_realizada = False
 resultado_procedencia = None
 
+
+resultado_archivo_exportado = {
+    "realizada": False,
+    "archivo": "datos_limpios.csv",
+    "filas": None,
+    "columnas": None,
+    "filas_correctas": False,
+    "columnas_correctas": False,
+    "estado": "NO_REALIZADA",
+    "motivo": (
+        "La exportación no se realizó "
+        "porque el proceso quedó BLOQUEADO. "
+        "Si el archivo existe, puede pertenecer "
+        "a una ejecución anterior."
+    )
+}
+
+
 if estado_consolidacion == "BLOQUEADO":
 
     mostrar_consolidacion_bloqueada(
         compatibilidad_estructural=diagnostico_estructural[
             "compatibilidad"
         ],
-        hay_incompatibilidades=hay_incompatibilidades
+        hay_incompatibilidades=hay_incompatibilidades,
+        duplicados_por_archivo=duplicados_por_archivo
     )
 
     estado_final = determinar_estado_final(
@@ -347,7 +381,8 @@ if estado_consolidacion == "BLOQUEADO":
     datos_finales = pd.DataFrame()
 
     resultado_calidad = {
-        "realizada": False,
+        "datos": pd.DataFrame(),
+
         "diagnostico": {
             "faltantes": {},
             "duplicados": {
@@ -357,28 +392,45 @@ if estado_consolidacion == "BLOQUEADO":
                 "porcentaje_duplicados": 0.0
             },
             "espacios": {},
-            "consistencia_texto": {},
-            "interpretacion": {
+            "consistencia_texto": {}
+        },
+
+        "decision": {
+            "calidad": {
                 "hallazgos": [],
-                "recomendaciones": []
+                "recomendaciones": [],
+                "estado": "REVISAR"
             }
         },
-        "correcciones": {},
-        "pendientes": [
-            {
-                "categoria": "consolidacion",
-                "columna": None,
-                "accion": "resolver_incompatibilidades"
-            }
-        ]
-    }
 
+        "ejecucion": {
+            "calidad": {
+                "realizada": False
+            },
+            "correcciones": {}
+        },
+
+        "validacion": {
+            "calidad": []
+        },
+
+        "resultado": {
+            "correcciones": {},
+            "pendientes": [
+                {
+                    "categoria": "consolidacion",
+                    "columna": None,
+                    "accion": "resolver_incompatibilidades"
+                }
+            ]
+        }
+    }
     resumen = {
         "archivos_analizados": len(archivos_csv),
         "registros_procesados": 0,
         "categorias_con_hallazgos": [],
         "correcciones_realizadas": {},
-        "pendientes": resultado_calidad["pendientes"]
+        "pendientes": resultado_calidad["resultado"]["pendientes"]
     }
 
 else:
@@ -407,12 +459,13 @@ else:
     resumen = construir_resumen(
         diagnostico,
         resultado_calidad["diagnostico"],
+        resultado_calidad["decision"]["calidad"],
         datos_finales,
-        resultado_calidad["correcciones"],
-        resultado_calidad["pendientes"]
+        resultado_calidad["ejecucion"]["correcciones"],
+        resultado_calidad["resultado"]["pendientes"]
     )
 
-    diagnostico["calidad"] = resultado_calidad
+    diagnostico["calidad"] = resultado_calidad["diagnostico"]
 
     # ------------------------------------------------------
     # Validar cantidad de registros
@@ -452,17 +505,35 @@ else:
 
     estado_final = determinar_estado_final(
         estado_consolidacion=estado_consolidacion,
+        estado_calidad=resultado_calidad["decision"]["calidad"]["estado"],
         validacion_registros_realizada=validacion_registros_realizada,
         validacion_registros_correcta=registros_validos,
         validacion_procedencia_realizada=validacion_procedencia_realizada,
         validacion_procedencia_correcta=validacion_procedencia_correcta
     )
 
+
     if estado_final != "BLOQUEADO":
         exportar_datos_csv(
             datos_finales,
             "salida/datos_limpios.csv"
         )
+
+        resultado_archivo_exportado = validar_archivo_exportado(
+            Path("salida/datos_limpios.csv"),
+            datos_finales.columns.tolist(),
+            len(datos_finales)
+        )
+
+        resultado_archivo_exportado["realizada"] = True
+
+
+        if resultado_archivo_exportado["estado"] in {
+            "REVISAR",
+            "ERROR"
+        }:
+            estado_final = "REVISAR"
+
 
     mostrar_validacion_registros(
         registros_esperados,
@@ -485,19 +556,34 @@ validacion["procedencia"] = {
     "resultados": resultado_procedencia
 }
 
+validacion["calidad"] = (
+    resultado_calidad["validacion"]
+)
+
+validacion["archivo_exportado"] = (
+    resultado_archivo_exportado
+)
+
 informe = construir_informe(
     resumen=resumen,
     diagnostico_calidad=resultado_calidad["diagnostico"],
-    correcciones=resultado_calidad["correcciones"],
-    pendientes=resultado_calidad["pendientes"],
+    decision_calidad=resultado_calidad["decision"]["calidad"],
+    correcciones=resultado_calidad["ejecucion"]["correcciones"],
+    pendientes=resultado_calidad["resultado"]["pendientes"],
     estado_final=estado_final,
-    validacion=validacion
+    validacion=validacion,
+    diagnostico_estructural=diagnostico,
+    decision_estructural=decision,
+    duplicados_por_archivo=duplicados_por_archivo
 )
+
 
 exportar_informe_txt(
             informe,
             "salida/informe_proceso.txt"
         )
+
+decision["calidad"] = resultado_calidad["decision"]["calidad"]
 
 resultado_proceso = crear_resultado_proceso(
     diagnostico,
@@ -507,9 +593,18 @@ resultado_proceso = crear_resultado_proceso(
     estado_final,
     datos_finales,
     resumen,
-    resultado_calidad["correcciones"],
-    resultado_calidad["pendientes"]
+    resultado_calidad["ejecucion"]["correcciones"],
+    resultado_calidad["resultado"]["pendientes"]
 )
+
+#print()
+#print("AUDITORÍA RESULTADO_PROCESO")
+#print("Diagnóstico:", resultado_proceso["diagnostico"].keys())
+#print("Decisión:", resultado_proceso["decision"].keys())
+#print("Ejecución:", resultado_proceso["ejecucion"].keys())
+#print("Validación:", resultado_proceso["validacion"].keys())
+#print("Resultado:", resultado_proceso["resultado"].keys())
+#print("Estado final:", resultado_proceso["resultado"]["estado_final"])
 
 libro = crear_libro_informe()
 
@@ -562,10 +657,19 @@ for hoja in libro.worksheets:
 
     ajustar_ancho_columnas(hoja)
 
-guardar_libro_informe(
-    libro,
-    "salida/informe_proceso.xlsx"
-)
+try:
+    guardar_libro_informe(
+        libro,
+        "salida/informe_proceso.xlsx"
+    )
+
+    print()
+    print("Informe Excel guardado correctamente.")
+
+except OSError as error:
+    print()
+    print("ERROR: No se pudo guardar el informe Excel.")
+    print(f"Detalle: {error}")
 
 mostrar_resumen_proceso(
     resultado_proceso

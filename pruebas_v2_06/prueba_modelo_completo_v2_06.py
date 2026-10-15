@@ -1,5 +1,8 @@
 from modelo.resultados_v2 import crear_resultado_proceso
 
+import unittest
+import pandas as pd
+
 
 # ----------------------------------------------------------
 # DIAGNÓSTICO
@@ -125,31 +128,161 @@ validacion = {
 
 
 # ----------------------------------------------------------
-# RESULTADO
+# CONSTRUIR Y PROBAR EL RESULTADO COMPLETO
 # ----------------------------------------------------------
 
-resultado = {
-    "estado_final": "REVISAR"
-}
+def construir_resultado_prueba():
+
+    estado_final = "REVISAR"
+
+    datos_finales = pd.DataFrame({
+        "ID": [1, 2, 3, 4, 5, 6],
+        "Nombre": [
+            "Ana", "Carlos", "Luisa",
+            "Pedro", "Marta", "Luis"
+        ],
+        "Precio": [100, 200, 150, 250, 300, 400],
+        "Archivo_Origen": [
+            "archivo_X.csv",
+            "archivo_X.csv",
+            "archivo_X.csv",
+            "archivo_S.csv",
+            "archivo_S.csv",
+            "archivo_S.csv"
+        ]
+    })
+
+    resumen = {
+        "archivos_analizados": 2,
+        "registros_procesados": 6,
+        "categorias_con_hallazgos": [],
+        "correcciones_realizadas": {},
+        "pendientes": ["Precio"]
+    }
+
+    correcciones = {}
+    pendientes = ["Precio"]
+
+    return crear_resultado_proceso(
+        diagnostico=diagnostico,
+        decision=decision,
+        ejecucion=ejecucion,
+        validacion=validacion,
+        estado_final=estado_final,
+        datos_finales=datos_finales,
+        resumen=resumen,
+        correcciones=correcciones,
+        pendientes=pendientes
+    )
 
 
-# ----------------------------------------------------------
-# CONSTRUIR RESULTADO COMPLETO
-# ----------------------------------------------------------
+class PruebaModeloCompleto(unittest.TestCase):
 
-resultado_proceso = crear_resultado_proceso(
-    diagnostico=diagnostico,
-    decision=decision,
-    ejecucion=ejecucion,
-    validacion=validacion,
-    resultado=resultado
-)
+    def setUp(self):
+        self.resultado = construir_resultado_prueba()
+
+    def test_contiene_las_cinco_secciones(self):
+        self.assertEqual(
+            set(self.resultado.keys()),
+            {
+                "diagnostico",
+                "decision",
+                "ejecucion",
+                "validacion",
+                "resultado"
+            }
+        )
+
+    def test_conserva_estado_final(self):
+        self.assertEqual(
+            self.resultado["resultado"]["estado_final"],
+            "REVISAR"
+        )
+
+    def test_conserva_seis_registros(self):
+        datos = self.resultado["resultado"]["datos"]
+
+        self.assertEqual(len(datos), 6)
+        self.assertEqual(
+            self.resultado["resultado"]["resumen"][
+                "registros_procesados"
+            ],
+            6
+        )
+
+    def test_conserva_procedencia(self):
+        datos = self.resultado["resultado"]["datos"]
+
+        self.assertEqual(
+            datos["Archivo_Origen"].value_counts().to_dict(),
+            {
+                "archivo_X.csv": 3,
+                "archivo_S.csv": 3
+            }
+        )
+
+    def test_conserva_decision_y_validacion(self):
+        self.assertEqual(
+            self.resultado["decision"]["estado_consolidacion"],
+            "REVISAR"
+        )
+
+        self.assertEqual(
+            self.resultado["validacion"]["registros"]["esperados"],
+            6
+        )
+
+        self.assertEqual(
+            self.resultado["validacion"]["registros"]["obtenidos"],
+            6
+        )
+
+    def test_conserva_resultado_bloqueado_sin_datos(self):
+        resultado = crear_resultado_proceso(
+            diagnostico={},
+            decision={
+                "estado_consolidacion": "BLOQUEADO"
+            },
+            ejecucion={
+                "consolidacion_realizada": False
+            },
+            validacion={},
+            estado_final="BLOQUEADO",
+            datos_finales=pd.DataFrame(),
+            resumen={
+                "archivos_analizados": 2,
+                "registros_procesados": 0,
+                "categorias_con_hallazgos": [],
+                "correcciones_realizadas": {},
+                "pendientes": []
+            },
+            correcciones={},
+            pendientes=[]
+        )
+
+        self.assertEqual(
+            resultado["resultado"]["estado_final"],
+            "BLOQUEADO"
+        )
+
+        self.assertEqual(
+            resultado["decision"]["estado_consolidacion"],
+            "BLOQUEADO"
+        )
+
+        self.assertFalse(
+            resultado["ejecucion"]["consolidacion_realizada"]
+        )
+
+        self.assertTrue(
+            resultado["resultado"]["datos"].empty
+        )
+
+        self.assertEqual(
+            resultado["resultado"]["resumen"]["registros_procesados"],
+            0
+        )
 
 
-# ----------------------------------------------------------
-# MOSTRAR RESULTADO
-# ----------------------------------------------------------
-
-print()
-print("RESULTADO PROCESO V2-06:")
-print(resultado_proceso)
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

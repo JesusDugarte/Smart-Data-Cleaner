@@ -44,15 +44,14 @@ def construir_datos_finales(
 def construir_resumen(
     diagnostico_v2_06,
     diagnostico_calidad,
+    decision_calidad,
     datos_finales,
     correcciones,
     pendientes
 ):
     categorias_con_hallazgos = []
 
-    hallazgos = diagnostico_calidad[
-        "interpretacion"
-    ]["hallazgos"]
+    hallazgos = decision_calidad["hallazgos"]
 
     for hallazgo in hallazgos:
         categoria = hallazgo["categoria"]

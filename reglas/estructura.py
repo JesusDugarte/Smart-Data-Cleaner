@@ -256,6 +256,9 @@ def determinar_estado_consolidacion(
     if compatibilidad_estructural == "SIN_BASE_COMUN":
         return "BLOQUEADO"
 
+    if compatibilidad_estructural == "ESTRUCTURA_PARCIAL":
+        return "REVISAR"
+
     if hay_conflictos or hay_datos_insuficientes:
         return "REVISAR"
 
@@ -266,12 +269,19 @@ def determinar_estado_final(
     validacion_registros_realizada,
     validacion_registros_correcta,
     validacion_procedencia_realizada,
-    validacion_procedencia_correcta
+    validacion_procedencia_correcta,
+    estado_calidad="LISTO"
 ):
     if estado_consolidacion == "BLOQUEADO":
         return "BLOQUEADO"
 
     if estado_consolidacion == "REVISAR":
+        return "REVISAR"
+
+    if estado_calidad == "BLOQUEADO":
+        return "BLOQUEADO"
+
+    if estado_calidad == "REVISAR":
         return "REVISAR"
 
     if not validacion_registros_realizada:

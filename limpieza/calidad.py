@@ -50,13 +50,20 @@ def corregir_espacios(datos):
 
 def corregir_capitalizacion(
     datos,
-    decisiones_capitalizacion
+    decisiones_capitalizacion,
+    columna_objetivo=None
 ):
     datos_corregidos = datos.copy()
 
     correcciones_capitalizacion = {}
 
     for columna in datos_corregidos.columns:
+
+        if (
+            columna_objetivo is not None
+            and columna != columna_objetivo
+        ):
+            continue
 
         if datos_corregidos[columna].dtype != "object":
             continue

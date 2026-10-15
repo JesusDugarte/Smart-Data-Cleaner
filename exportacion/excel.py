@@ -2,6 +2,7 @@ from openpyxl import Workbook
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.cell.cell import MergedCell
+import pandas as pd
 
 def crear_libro_informe():
 
@@ -67,6 +68,11 @@ def construir_resumen(hoja, resultado_proceso):
     hoja["A14"] = "Procedencia"
     hoja["B14"] = validacion_procedencia
 
+    archivo_exportado = validacion["archivo_exportado"]
+
+    hoja["A15"] = "Archivo exportado"
+    hoja["B15"] = archivo_exportado["estado"]
+
 def formatear_resumen(hoja):
 
     hoja["A1"].font = Font(
@@ -115,6 +121,10 @@ def formatear_resumen(hoja):
         horizontal="center"
     )
 
+    hoja["B15"].alignment = Alignment(
+        horizontal="center"
+    )
+
     estado = hoja["B7"].value
 
     if estado == "LISTO":
@@ -142,7 +152,7 @@ def construir_calidad(hoja, resultado_calidad):
 
     hoja["A1"] = "CALIDAD DE DATOS"
 
-    if not resultado_calidad["realizada"]:
+    if not resultado_calidad["ejecucion"]["calidad"]["realizada"]:
 
         hoja["A3"] = "Análisis de calidad no realizado."
 
@@ -150,7 +160,8 @@ def construir_calidad(hoja, resultado_calidad):
 
     construir_calidad_faltantes(
         hoja,
-        resultado_calidad["diagnostico"]
+        resultado_calidad["diagnostico"],
+        resultado_calidad["decision"]["calidad"]
     )
 
     construir_calidad_duplicados(
@@ -165,16 +176,21 @@ def construir_calidad(hoja, resultado_calidad):
 
     construir_calidad_consistencia(
         hoja,
-        resultado_calidad["diagnostico"]
+        resultado_calidad["diagnostico"],
+        resultado_calidad["decision"]["calidad"]
     )
 
-def construir_calidad_faltantes(hoja, diagnostico_calidad):
+def construir_calidad_faltantes(
+    hoja,
+    diagnostico_calidad,
+    decision_calidad
+):
 
     faltantes = diagnostico_calidad["faltantes"]
 
     clasificaciones = {}
 
-    for hallazgo in diagnostico_calidad["interpretacion"]["hallazgos"]:
+    for hallazgo in decision_calidad["hallazgos"]:
 
         if hallazgo["categoria"] == "faltantes":
 
@@ -255,7 +271,11 @@ def construir_calidad_espacios(hoja, diagnostico_calidad):
 
         fila += 1
 
-def construir_calidad_consistencia(hoja, diagnostico_calidad):
+def construir_calidad_consistencia(
+    hoja,
+    diagnostico_calidad,
+    decision_calidad
+):
 
     consistencia = diagnostico_calidad["consistencia_texto"]
 
@@ -314,7 +334,7 @@ def construir_calidad_consistencia(hoja, diagnostico_calidad):
 
     fila = 33
 
-    for hallazgo in diagnostico_calidad["interpretacion"]["hallazgos"]:
+    for hallazgo in decision_calidad["hallazgos"]:
 
         if hallazgo["categoria"] != "consistencia_texto":
             continue
@@ -326,6 +346,7 @@ def construir_calidad_consistencia(hoja, diagnostico_calidad):
             hoja.cell(fila, 1).value = grupo
             hoja.cell(fila, 2).value = decision["forma_dominante"]
             hoja.cell(fila, 3).value = decision["porcentaje"]
+            hoja.cell(fila, 3).number_format = '0.00"%"'
             hoja.cell(fila, 4).value = (
                 "Sí"
                 if decision["corregible"]
@@ -514,10 +535,12 @@ def construir_datos_limpios(hoja, resultado_proceso):
             fila_datos,
             start=1
         ):
+            valor_excel = None if pd.isna(valor) else valor
+
             hoja.cell(
                 fila_numero,
                 columna_numero
-            ).value = valor
+            ).value = valor_excel
 
 def formatear_datos_limpios(hoja):
 

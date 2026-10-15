@@ -192,3 +192,12 @@ def detectar_diferencias_orden_varios(archivos, nombres_archivos):
             }
 
     return diferencias
+
+def detectar_columnas_duplicadas(columnas):
+    duplicados = {}
+
+    for columna in columnas:
+        if columnas.count(columna) > 1:
+            duplicados[columna] = columnas.count(columna)
+
+    return duplicados

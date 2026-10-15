@@ -1,69 +1,69 @@
 import pandas as pd
 
+from pandas.errors import EmptyDataError
+
 def validar_archivo_exportado(
     archivo,
     columnas_esperadas,
     filas_esperadas
 ):
-    if archivo.suffix.lower() == ".csv":
-        datos_exportados = pd.read_csv(
-            archivo,
-            dtype={"Telefono": "string"}
-        )
-    elif archivo.suffix.lower() == ".xlsx":
-        datos_exportados = pd.read_excel(
-            archivo,
-            dtype={"Telefono": "string"}
-        )
+    if archivo.suffix.lower() not in {".csv", ".xlsx"}:
+        return {
+            "archivo": archivo.name,
+            "estado": "REVISAR",
+            "motivo": "Formato de archivo no soportado"
+        }
 
-    resultado = {
+    if not archivo.exists():
+        return {
+            "archivo": archivo.name,
+            "estado": "ERROR",
+            "motivo": "ARCHIVO_NO_ENCONTRADO"
+        }
+
+    try:
+        if archivo.suffix.lower() == ".csv":
+            datos_exportados = pd.read_csv(archivo)
+        else:
+            datos_exportados = pd.read_excel(archivo)
+
+    except EmptyDataError:
+        return {
+            "archivo": archivo.name,
+            "estado": "ERROR",
+            "motivo": "ARCHIVO_NO_LEIBLE"
+        }
+
+    except (OSError, ValueError, ImportError) as error:
+        return {
+            "archivo": archivo.name,
+            "estado": "ERROR",
+            "motivo": "ARCHIVO_NO_LEIBLE"
+        }
+
+
+    filas_obtenidas = len(datos_exportados)
+    columnas_obtenidas = len(datos_exportados.columns)
+
+    filas_correctas = (
+        filas_obtenidas == filas_esperadas
+    )
+
+    columnas_correctas = (
+        datos_exportados.columns.tolist()
+        == columnas_esperadas
+    )
+
+    if filas_correctas and columnas_correctas:
+        estado = "VALIDADO"
+    else:
+        estado = "REVISAR"
+
+    return {
         "archivo": archivo.name,
-        "filas": len(datos_exportados),
-        "columnas": len(datos_exportados.columns),
-        "columnas_correctas": (
-            datos_exportados.columns.tolist()
-            == columnas_esperadas
-        ),
-        "telefono_valido": False,
-        "fechas_validas": False,
-        "estado": "REVISAR"
+        "filas": filas_obtenidas,
+        "columnas": columnas_obtenidas,
+        "filas_correctas": filas_correctas,
+        "columnas_correctas": columnas_correctas,
+        "estado": estado
     }
-
-    # Validar teléfono
-    if "Telefono" in datos_exportados.columns:
-        telefonos = datos_exportados["Telefono"].dropna()
-
-        telefonos_validos = (
-            telefonos.str.len().eq(10)
-            & telefonos.str.isdigit()
-        )
-
-        resultado["telefono_valido"] = telefonos_validos.all()
-
-    # Validar fechas
-    if "Fecha_Registro" in datos_exportados.columns:
-        fechas = datos_exportados["Fecha_Registro"]
-
-        fechas_convertidas = pd.to_datetime(
-            fechas,
-            errors="coerce"
-        )
-
-        fechas_validas = (
-            fechas.isna()
-            | fechas_convertidas.notna()
-        )
-
-        resultado["fechas_validas"] = fechas_validas.all()
-
-    # Validación general
-    if (
-        resultado["filas"] == filas_esperadas
-        and resultado["columnas"] == len(columnas_esperadas)
-        and resultado["columnas_correctas"]
-        and resultado["telefono_valido"]
-        and resultado["fechas_validas"]
-    ):
-        resultado["estado"] = "VALIDADO"
-
-    return resultado

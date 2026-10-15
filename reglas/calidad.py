@@ -25,6 +25,14 @@ def interpretar_calidad(diagnostico):
 
             hallazgos.append(hallazgo)
 
+            recomendacion = {
+                "categoria": "faltantes",
+                "columna": columna,
+                "accion": "revisar_faltantes"
+            }
+
+            recomendaciones.append(recomendacion)
+
     duplicados = diagnostico["duplicados"]
 
     if duplicados["filas_duplicadas"] > 0:
@@ -126,6 +134,20 @@ def interpretar_calidad(diagnostico):
                         recomendacion
                     )
 
+                else:
+
+                    recomendacion = {
+                        "categoria": "consistencia_texto",
+                        "columna": columna,
+                        "accion": "revisar_capitalizacion",
+                        "grupo": clave,
+                        "motivo": "sin_forma_dominante"
+                    }
+
+                    recomendaciones.append(
+                        recomendacion
+                    )
+
     hay_hallazgos = len(hallazgos) > 0
 
     return {
@@ -190,3 +212,37 @@ def clasificar_faltantes(resultado):
         return "FALTANTES_SIGNIFICATIVOS"
 
     return "SIN_DATOS"
+
+
+def determinar_estado_calidad(
+    pendientes,
+    resultados_validacion
+):
+    estados_validos = {
+        "SIN_ACCION",
+        "CORREGIDO",
+        "CORREGIDO_CON_PENDIENTES",
+        "NO_CORREGIDO",
+        "ERROR"
+    }
+
+    for resultado in resultados_validacion:
+        estado = resultado.get("estado")
+
+        if estado not in estados_validos:
+            return "BLOQUEADO"
+
+        if estado == "ERROR":
+            return "BLOQUEADO"
+
+    if len(pendientes) > 0:
+        return "REVISAR"
+
+    for resultado in resultados_validacion:
+        if resultado["estado"] in {
+            "NO_CORREGIDO",
+            "CORREGIDO_CON_PENDIENTES"
+        }:
+            return "REVISAR"
+
+    return "LISTO"

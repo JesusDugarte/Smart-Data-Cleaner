@@ -36,7 +36,8 @@ def ejecutar_correcciones(datos, recomendaciones):
             resultado_capitalizacion = (
                 corregir_capitalizacion(
                     datos_corregidos,
-                    decisiones_capitalizacion
+                    decisiones_capitalizacion,
+                    columna_objetivo=recomendacion["columna"]
                 )
             )
 
