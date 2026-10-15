@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.pyc
 
@@ -26,3 +26,6 @@ salida_prueba_*/
 # Comparaciones temporales del desarrollo
 /comparacion_*.txt
 /qq
+# Herramientas auxiliares de diagnostico local
+/diagnosticos_manuales/
+/pruebas_calidad_integral/
