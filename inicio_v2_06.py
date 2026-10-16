@@ -498,9 +498,12 @@ else:
     
     validacion_procedencia_realizada = True
 
-    validacion_procedencia_correcta = all(
-        resultado["valida"]
-        for resultado in resultado_procedencia.values()
+    validacion_procedencia_correcta = (
+        bool(resultado_procedencia)
+        and all(
+            resultado["valida"]
+            for resultado in resultado_procedencia.values()
+        )
     )
 
     estado_final = determinar_estado_final(
@@ -656,6 +659,18 @@ formatear_datos_limpios(
 for hoja in libro.worksheets:
 
     ajustar_ancho_columnas(hoja)
+
+
+# Ajuste específico de la columna de procedencia
+hoja_datos = libro["Datos_Limpios"]
+
+for celda in hoja_datos[3]:
+    if celda.value == "Archivo_Origen":
+        hoja_datos.column_dimensions[
+            celda.column_letter
+        ].width = 22
+        break
+
 
 try:
     guardar_libro_informe(
