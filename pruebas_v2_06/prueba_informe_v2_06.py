@@ -163,6 +163,59 @@ class PruebaExportarInformeTxt(unittest.TestCase):
         self.assertIn("Estado: COMPLETADO", contenido)
         self.assertIn("Estado: VALIDADO", contenido)
 
+    def test_debe_detallar_resultados_de_validacion_de_correcciones(self):
+        informe = crear_informe_prueba()
+
+        informe["validacion"]["calidad"]["calidad"] = [
+            {
+                "categoria": "espacios",
+                "columna": "Nombre",
+                "antes": 3,
+                "despues": 0,
+                "corregidos": 3,
+                "pendientes": 0,
+                "estado": "CORREGIDO",
+            },
+            {
+                "categoria": "consistencia_texto",
+                "columna": "Ciudad",
+                "grupo": "bogota",
+                "forma_dominante": "Bogota",
+                "antes": 2,
+                "despues": 1,
+                "corregidos": 1,
+                "pendientes": 1,
+                "estado": "CORREGIDO_CON_PENDIENTES",
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as carpeta:
+            archivo = Path(carpeta) / "informe_validacion.txt"
+
+            exportar_informe_txt(informe, archivo)
+
+            contenido = archivo.read_text(encoding="utf-8")
+
+        # Verificar la corrección completa.
+        self.assertIn("ESPACIOS", contenido)
+        self.assertIn("Nombre:", contenido)
+        self.assertIn("Antes: 3", contenido)
+        self.assertIn("Despues: 0", contenido)
+        self.assertIn("Corregidos: 3", contenido)
+        self.assertIn("Pendientes: 0", contenido)
+        self.assertIn("Estado: CORREGIDO", contenido)
+
+        # Verificar la corrección parcial de consistencia de texto.
+        self.assertIn("CONSISTENCIA DE TEXTO", contenido)
+        self.assertIn("Ciudad:", contenido)
+        self.assertIn("Grupo: bogota", contenido)
+        self.assertIn("Forma dominante: Bogota", contenido)
+        self.assertIn("Antes: 2", contenido)
+        self.assertIn("Despues: 1", contenido)
+        self.assertIn("Corregidos: 1", contenido)
+        self.assertIn("Pendientes: 1", contenido)
+        self.assertIn("Estado: CORREGIDO_CON_PENDIENTES", contenido)
+
     def test_bloqueo_por_encabezados_duplicados_debe_explicarse(self):
         informe = crear_informe_prueba(estado_final="BLOQUEADO")
         informe["decision_estructural"]["motivos"][

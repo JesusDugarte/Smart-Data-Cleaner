@@ -235,6 +235,47 @@ class PruebaIntegracionCalidad(unittest.TestCase):
                 data_only=True
             )
 
+
+            # Verificar los resultados reales de la validación
+            # de capitalización dentro de su sección específica.
+            self.assertIn(
+                "VALIDACIÓN DE CORRECCIONES",
+                contenido_txt,
+                "Falta la sección de validación de correcciones."
+            )
+
+            seccion_validacion = contenido_txt.split(
+                "VALIDACIÓN DE CORRECCIONES",
+                1
+            )[1]
+
+            self.assertIn(
+                "CONSISTENCIA DE TEXTO",
+                seccion_validacion,
+                "Falta la validación de consistencia de texto."
+            )
+
+            seccion_capitalizacion = (
+                seccion_validacion
+                .split("CONSISTENCIA DE TEXTO", 1)[1]
+                .split("RESULTADO FINAL", 1)[0]
+            )
+
+            self.assertIn("Nombre:", seccion_capitalizacion)
+            self.assertIn(
+                "Grupo: producto zz",
+                seccion_capitalizacion
+            )
+            self.assertIn(
+                "Forma dominante: Producto ZZ",
+                seccion_capitalizacion
+            )
+            self.assertIn("Antes: 1", seccion_capitalizacion)
+            self.assertIn("Despues: 0", seccion_capitalizacion)
+            self.assertIn("Corregidos: 1", seccion_capitalizacion)
+            self.assertIn("Pendientes: 0", seccion_capitalizacion)
+            self.assertIn("Estado: CORREGIDO", seccion_capitalizacion)
+
             try:
                 hojas_esperadas = {
                     "Resumen",
